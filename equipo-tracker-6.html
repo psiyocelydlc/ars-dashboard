@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Equipo de Asesores</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a22;
+    --surface2: #1e2330;
+    --border: #2a3040;
+    --accent: #4f8ef7;
+    --accent2: #f7a24f;
+    --accent3: #4ff7a2;
+    --accent4: #f74f7a;
+    --text: #e8eaf0;
+    --text-dim: #7a8099;
+    --nv2: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  header h1 span { color: var(--accent); }
+  .month-selector {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .month-selector select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 12px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; cursor: pointer;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px;
+    padding: 16px 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px; border-radius: 8px 8px 0 0;
+    background: transparent; border: 1px solid transparent;
+    color: var(--text-dim); cursor: pointer;
+    font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600;
+    transition: all 0.2s;
+    border-bottom: none;
+  }
+  .tab:hover { color: var(--text); background: var(--surface2); }
+  .tab.active {
+    background: var(--surface); border-color: var(--border);
+    color: var(--text); border-bottom: 1px solid var(--surface);
+    margin-bottom: -1px;
+  }
+
+  /* MAIN */
+  main { padding: 28px 32px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* SUMMARY CARDS */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .sum-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .sum-card .label {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .sum-card .value {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+  }
+  .sum-card .sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+  .sum-card.highlight { border-color: var(--accent); }
+  .sum-card.highlight .value { color: var(--accent); }
+
+  /* ASESOR CARDS */
+  .advisors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+  .advisor-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .advisor-card:hover { border-color: var(--accent); }
+  .advisor-header {
+    padding: 16px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .advisor-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+  }
+  .advisor-level {
+    font-size: 0.7rem; padding: 3px 10px;
+    border-radius: 20px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .level-nv2 { background: rgba(192,132,252,0.15); color: var(--nv2); border: 1px solid rgba(192,132,252,0.3); }
+  .level-nv1 { background: rgba(79,142,247,0.12); color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+
+  .advisor-body { padding: 16px 20px; }
+
+  /* PRODUCT ROWS */
+  .product-row {
+    margin-bottom: 12px;
+  }
+  .product-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 5px;
+  }
+  .product-name { font-size: 0.8rem; color: var(--text-dim); }
+  .product-count {
+    font-size: 0.8rem; font-weight: 500;
+  }
+  .progress-bar {
+    height: 6px; background: var(--surface2);
+    border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.6s cubic-bezier(.4,0,.2,1);
+  }
+  .fill-blue { background: linear-gradient(90deg, #4f8ef7, #82b4ff); }
+  .fill-green { background: linear-gradient(90deg, #4ff7a2, #82ffc4); }
+  .fill-orange { background: linear-gradient(90deg, #f7a24f, #ffcc82); }
+  .fill-pink { background: linear-gradient(90deg, #f74f7a, #ff82a4); }
+  .fill-purple { background: linear-gradient(90deg, #c084fc, #d4a0ff); }
+
+  /* BONUS TRASPASO */
+  .bonus-section {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 12px;
+  }
+  .bonus-title {
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .weeks-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 8px;
+  }
+  .week-box {
+    text-align: center;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+  }
+  .week-label { font-size: 0.65rem; color: var(--text-dim); margin-bottom: 4px; }
+  .week-input {
+    width: 100%; background: transparent; border: none;
+    text-align: center; color: var(--text);
+    font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+    outline: none;
+  }
+  .week-input:focus { color: var(--accent); }
+  .week-status {
+    font-size: 0.62rem; margin-top: 3px;
+  }
+  .week-status.ok { color: var(--accent3); }
+  .week-status.no { color: var(--accent4); }
+  .week-status.pending { color: var(--text-dim); }
+
+  /* PRODUCT INPUT */
+  .product-input-area {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .product-input-area select, .product-input-area input {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 7px 12px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+  }
+  .product-input-area select { flex: 2; }
+  .product-input-area input { flex: 1; }
+  .btn {
+    padding: 7px 16px; border-radius: 8px; border: none;
+    background: var(--accent); color: white;
+    font-family: 'Syne', sans-serif; font-weight: 600;
+    font-size: 0.82rem; cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+
+  /* CHART SECTION */
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .chart-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+
+  /* VISITAS */
+  .visitas-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px;
+  }
+  .visitas-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem; font-weight: 800;
+  }
+  .btn-add { background: var(--accent3); color: #0d0f14; }
+  .visita-form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .visita-form.open { display: block; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 14px;
+  }
+  .form-group label {
+    display: block; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-dim); margin-bottom: 5px;
+  }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text);
+    padding: 8px 12px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  }
+  .form-group textarea { resize: vertical; min-height: 60px; }
+  .visitas-list { display: flex; flex-direction: column; gap: 10px; }
+  .visita-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .visita-empresa {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.95rem;
+  }
+  .visita-meta { font-size: 0.8rem; color: var(--text-dim); margin-top: 3px; }
+  .visita-notas { font-size: 0.78rem; margin-top: 6px; color: var(--text); }
+  .visita-status {
+    font-size: 0.7rem; padding: 4px 12px;
+    border-radius: 20px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .status-pendiente { background: rgba(247,162,79,0.15); color: var(--accent2); border: 1px solid rgba(247,162,79,0.3); }
+  .status-realizada { background: rgba(79,247,162,0.12); color: var(--accent3); border: 1px solid rgba(79,247,162,0.25); }
+  .status-seguimiento { background: rgba(79,142,247,0.12); color: var(--accent); border: 1px solid rgba(79,142,247,0.25); }
+  .status-cancelada { background: rgba(247,79,122,0.12); color: var(--accent4); border: 1px solid rgba(247,79,122,0.25); }
+
+  .delete-btn {
+    background: transparent; border: none;
+    color: var(--text-dim); cursor: pointer; font-size: 1rem;
+    padding: 4px 8px; border-radius: 6px; transition: all 0.2s;
+  }
+  .delete-btn:hover { background: rgba(247,79,122,0.15); color: var(--accent4); }
+
+  /* REGISTRO INPUT */
+  .registro-row {
+    display: flex; align-items: center; gap: 8px;
+    flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .registro-row select, .registro-row input {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+    flex: 1; min-width: 140px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 800;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    .tabs { padding: 12px 16px 0; }
+    header { padding: 14px 16px; }
+    .advisors-grid { grid-template-columns: 1fr; }
+  }
+
+  /* TRASPASO TABLE */
+  .traspaso-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow-x: auto;
+  }
+  .traspaso-table {
+    width: 100%; border-collapse: collapse; min-width: 500px;
+  }
+  .traspaso-table th {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--text-dim);
+    padding: 12px 14px; text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600; white-space: nowrap;
+  }
+  .traspaso-table th:first-child { text-align: left; }
+  .traspaso-table td {
+    padding: 11px 14px; text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .traspaso-table td:first-child {
+    text-align: left;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.88rem;
+  }
+  .traspaso-table tr:last-child td { border-bottom: none; }
+  .traspaso-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .td-meta { color: var(--accent2); font-size: 0.78rem; }
+  .td-real { font-weight: 600; }
+  .td-total {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: 1rem;
+    background: rgba(79,142,247,0.08);
+  }
+  .td-bono-ok { color: var(--accent3); font-weight: 700; }
+  .td-bono-no { color: var(--accent4); font-weight: 600; }
+  .td-bono-pending { color: var(--text-dim); }
+  .table-section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text-dim); margin-bottom: 12px; margin-top: 24px;
+  }
+  .table-section-label:first-child { margin-top: 0; }
+
+  /* STICKY FIRST COLUMN */
+  .traspaso-table th:first-child,
+  .traspaso-table td:first-child {
+    position: sticky; left: 0; z-index: 2;
+    background: var(--surface);
+    box-shadow: 2px 0 6px rgba(0,0,0,0.3);
+  }
+  .traspaso-table thead th:first-child { background: var(--surface2); }
+
+  /* ASESOR ACCORDION (visitas) */
+  .asesor-accordion {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .asesor-accordion-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .asesor-accordion-header:hover { background: var(--surface2); }
+  .asesor-accordion-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.95rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .asesor-visit-count {
+    font-size: 0.7rem; padding: 2px 9px;
+    border-radius: 20px; font-weight: 600;
+    background: rgba(79,142,247,0.15);
+    color: var(--accent); border: 1px solid rgba(79,142,247,0.25);
+  }
+  .accordion-arrow {
+    font-size: 0.7rem; color: var(--text-dim);
+    transition: transform 0.2s;
+  }
+  .asesor-accordion.open .accordion-arrow { transform: rotate(180deg); }
+  .asesor-accordion-body {
+    display: none; padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .asesor-accordion.open .asesor-accordion-body { display: block; }
+  .asesor-accordion-body .visitas-list { padding-top: 14px; }
+
+  /* CONFIRM MODAL */
+  .confirm-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 999;
+    align-items: center; justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px 32px;
+    text-align: center;
+    max-width: 320px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .confirm-box h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .confirm-box p { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 22px; }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+  .btn-danger { background: var(--accent4); color: white; }
+  .btn-cancel-modal { background: var(--surface2); color: var(--text); }
+
+  /* SEMANA MODAL BUTTONS */
+  .semana-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 12px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.88rem;
+    cursor: pointer; transition: all 0.18s; text-align: left;
+  }
+  .semana-btn:hover { border-color: var(--accent); background: rgba(79,142,247,0.1); color: var(--accent); }
+  .semana-btn .sem-real { font-size:0.75rem; color:var(--text-dim); font-family:'DM Sans',sans-serif; font-weight:400; }
+  .semana-btn .sem-status-ok { color: var(--accent3); font-size:0.7rem; }
+  .semana-btn .sem-status-no { color: var(--accent4); font-size:0.7rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Equipo <span>ARS</span> · Dashboard</h1>
+  <div class="month-selector" style="gap:6px;">
+    <select id="selMes" onchange="updatePeriodo()" style="min-width:110px;">
+      <option value="0">Enero</option><option value="1">Febrero</option>
+      <option value="2">Marzo</option><option value="3">Abril</option>
+      <option value="4">Mayo</option><option value="5">Junio</option>
+      <option value="6">Julio</option><option value="7">Agosto</option>
+      <option value="8">Septiembre</option><option value="9">Octubre</option>
+      <option value="10">Noviembre</option><option value="11">Diciembre</option>
+    </select>
+    <select id="selAnio" onchange="updatePeriodo()">
+      <option>2026</option><option>2027</option><option>2028</option>
+      <option>2029</option><option>2030</option>
+    </select>
+    <div id="periodoDisplay" style="font-family:'Syne',sans-serif;font-size:0.8rem;color:var(--text-dim);white-space:nowrap;"></div>
+  </div>
+  <div id="syncStatus" style="font-size:0.72rem;white-space:nowrap;color:var(--text-dim);">⏳ Cargando...</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('progreso')">📊 Progreso</button>
+  <button class="tab" onclick="showTab('detalles')">👤 Detalles</button>
+  <button class="tab" onclick="showTab('graficos')">📈 Gráficos</button>
+  <button class="tab" onclick="showTab('visitas')">🏢 Visitas</button>
+</div>
+
+<main>
+
+<!-- PROGRESO -->
+<div id="tab-progreso" class="section active">
+  <div class="summary-grid" id="summaryCards"></div>
+  <div id="traspasoTable"></div>
+</div>
+
+<!-- DETALLES -->
+<div id="tab-detalles" class="section">
+  <div class="registro-row">
+    <select id="regAsesor">
+      <option value="">— Seleccionar asesor —</option>
+    </select>
+    <select id="regProducto">
+      <option value="traspasos">Traspasos</option>
+      <option value="carnets">Carnets</option>
+      <option value="dependientes">Inclusión Dependientes</option>
+      <option value="unificaciones">Unificaciones</option>
+      <option value="formularios">Formularios 1607</option>
+      <option value="planes">Planes Alternativos</option>
+    </select>
+    <input type="number" id="regCantidad" min="0" placeholder="Cantidad" style="max-width:120px;">
+    <button class="btn btn-sm" onclick="registrarProducto()">+ Registrar</button>
+  </div>
+  <div class="advisors-grid" id="advisorsGrid"></div>
+</div>
+
+<!-- GRAFICOS -->
+<div id="tab-graficos" class="section">
+  <div class="chart-container">
+    <div class="chart-title">Progreso por Asesor — Traspasos</div>
+    <canvas id="chartTraspasos" height="90"></canvas>
+  </div>
+  <div class="chart-container">
+    <div class="chart-title">Progreso General por Producto (Equipo)</div>
+    <canvas id="chartProductos" height="90"></canvas>
+  </div>
+  <div class="chart-container">
+    <div class="chart-title">Bono Semanal — Traspasos ≥ 5</div>
+    <canvas id="chartBono" height="90"></canvas>
+  </div>
+</div>
+
+<!-- VISITAS -->
+<div id="tab-visitas" class="section">
+  <div class="visitas-header">
+    <div>
+      <h2>Visitas a Empresas</h2>
+      <div id="visitasTotalCount" style="font-size:0.8rem;color:var(--text-dim);margin-top:3px;"></div>
+    </div>
+    <button class="btn btn-add" onclick="toggleForm()">+ Nueva Visita</button>
+  </div>
+
+  <div class="visita-form" id="visitaForm">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Empresa</label>
+        <input type="text" id="vEmpresa" placeholder="Nombre de la empresa">
+      </div>
+      <div class="form-group">
+        <label>Asesor Nv. 2</label>
+        <select id="vAsesor">
+          <option value="Ismeiry">Ismeiry</option>
+          <option value="Jordalia">Jordalia</option>
+          <option value="Yamilex">Yamilex</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fecha de Visita</label>
+        <input type="date" id="vFecha">
+      </div>
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="vEstado">
+          <option value="pendiente">Pendiente</option>
+          <option value="realizada">Realizada</option>
+          <option value="seguimiento">En Seguimiento</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Actividad / Notas</label>
+      <textarea id="vNotas" placeholder="Describe la actividad propuesta o seguimiento..."></textarea>
+    </div>
+    <button class="btn" onclick="agregarVisita()">Guardar Visita</button>
+    <button class="btn" style="background:var(--surface2);margin-left:8px;" onclick="toggleForm()">Cancelar</button>
+  </div>
+
+  <div id="visitasAsesorList"></div>
+</div>
+
+</main>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>¿Confirmar eliminación?</h3>
+    <p id="confirmMsg">Esta acción no se puede deshacer.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-danger" onclick="confirmAction()">Borrar</button>
+      <button class="btn btn-cancel-modal" onclick="closeConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEMANA MODAL -->
+<div class="confirm-overlay" id="semanaOverlay">
+  <div class="confirm-box" style="max-width:380px;">
+    <h3 id="semanaModalTitle">¿En qué semana?</h3>
+    <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:16px;" id="semanaModalSub"></p>
+    <div id="semanaModalBtns" style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;"></div>
+    <button class="btn btn-cancel-modal" style="width:100%;" onclick="closeSemanaModal()">Cancelar</button>
+  </div>
+</div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const PRODUCTS = ['traspasos','carnets','dependientes','unificaciones','formularios','planes'];
+const PRODUCT_LABELS = {
+  traspasos:'Traspasos', carnets:'Carnets',
+  dependientes:'Inc. Dependientes', unificaciones:'Unificaciones',
+  formularios:'Formularios 1607', planes:'Planes Alternativos'
+};
+const COLORS = ['fill-blue','fill-green','fill-orange','fill-pink','fill-purple','fill-blue'];
+
+const ASESORES = [
+  { nombre:'Ismeiry',   nivel:2, metas:{carnets:100, dependientes:10, unificaciones:10, formularios:10, planes:0} },
+  { nombre:'Jordalia',  nivel:2, metas:{carnets:100, dependientes:10, unificaciones:10, formularios:10, planes:0} },
+  { nombre:'Yamilex',   nivel:2, metas:{carnets:100, dependientes:10, unificaciones:10, formularios:10, planes:0} },
+  { nombre:'Carlos',    nivel:1, metas:{carnets:70,  dependientes:5,  unificaciones:5,  formularios:5,  planes:0} },
+  { nombre:'Juan',      nivel:1, metas:{carnets:70,  dependientes:5,  unificaciones:5,  formularios:5,  planes:0} },
+  { nombre:'Reynaldo',  nivel:1, metas:{carnets:70,  dependientes:5,  unificaciones:5,  formularios:5,  planes:0} },
+  { nombre:'Daniel',    nivel:1, metas:{carnets:70,  dependientes:5,  unificaciones:5,  formularios:5,  planes:0} },
+  { nombre:'Juanneris', nivel:1, metas:{carnets:70,  dependientes:5,  unificaciones:5,  formularios:5,  planes:0} },
+];
+
+// Traspaso metas por nivel
+const META_TRASP = { 1: 36, 2: 20 };
+
+// ─── PERIODO ─────────────────────────────────────────────────────────────────
+// periodo key: "YYYY-MM"
+function getPeriodoKey() {
+  const mes = document.getElementById('selMes').value.toString().padStart(2,'0');
+  const anio = document.getElementById('selAnio').value;
+  return `${anio}-${mes}`;
+}
+
+function updatePeriodo() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesIdx = parseInt(document.getElementById('selMes').value);
+  const anio = document.getElementById('selAnio').value;
+  document.getElementById('periodoDisplay').textContent = meses[mesIdx] + ' ' + anio;
+  renderAll();
+}
+
+// ─── STATE & SHEETDB SYNC ───────────────────────────────────────────────────
+const API_URL = 'https://sheetdb.io/api/v1/b8i4g05n7qe65';
+let allData = {};
+let saveTimer = null;
+
+function setSyncStatus(status) {
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  const map = { syncing:'⏳ Sincronizando...', ok:'☁️ Guardado', error:'⚠️ Sin conexión (local)' };
+  const colors = { syncing:'var(--accent2)', ok:'var(--accent3)', error:'var(--accent4)' };
+  el.textContent = map[status];
+  el.style.color = colors[status];
+}
+
+async function loadFromSheets() {
+  setSyncStatus('syncing');
+  try {
+    const res = await fetch(`${API_URL}`);
+    const rows = await res.json();
+    if(rows && rows.length > 0 && rows[0].data) {
+      allData = JSON.parse(rows[0].data);
+      localStorage.setItem('ars_allData', JSON.stringify(allData));
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    allData = JSON.parse(localStorage.getItem('ars_allData') || '{}');
+    setSyncStatus('error');
+  }
+}
+
+async function saveToSheets() {
+  localStorage.setItem('ars_allData', JSON.stringify(allData));
+  setSyncStatus('syncing');
+  try {
+    const jsonStr = JSON.stringify(allData);
+    // Check if row exists
+    const checkRes = await fetch(`${API_URL}`);
+    const rows = await checkRes.json();
+
+    if(rows && rows.length > 0) {
+      // Update existing row
+      await fetch(`${API_URL}/data/${encodeURIComponent(rows[0].data)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: { data: jsonStr } })
+      });
+    } else {
+      // Create first row
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [{ data: jsonStr }] })
+      });
+    }
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('error');
+  }
+}
+
+function save() {
+  localStorage.setItem('ars_allData', JSON.stringify(allData));
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToSheets, 1200);
+}
+
+// ─── DISTRIBUCIÓN DE METAS NV1 ───────────────────────────────────────────────
+// Semanas con estado 'V' (vacaciones) o 'L' (licencia) quedan en 0.
+// La meta total se distribuye solo entre las semanas activas.
+// El residuo va a la semana activa #2 (o la primera activa si no hay segunda).
+function distribuirMetas(semanas, total) {
+  const activas = semanas.map((w,i) => ({w, i})).filter(x => x.w.estado !== 'V' && x.w.estado !== 'L');
+  const n = activas.length;
+
+  // Primero poner 0 en todas las inactivas
+  semanas.forEach(w => {
+    if(w.estado === 'V' || w.estado === 'L') w.meta = 0;
+  });
+
+  if(n === 0) return; // todas inactivas, nada que distribuir
+
+  const base = Math.floor(total / n);
+  const residuo = total - (base * n);
+
+  activas.forEach(({w}, pos) => {
+    // El residuo va a la posición 1 (segunda semana activa), o a la 0 si solo hay una
+    const esSegunda = pos === 1 && n > 1;
+    w.meta = esSegunda && residuo > 0 ? base + residuo : base;
+  });
+}
+
+function esInactiva(w) {
+  return w.estado === 'V' || w.estado === 'L';
+}
+
+function getPeriodoData(key) {
+  if(!allData[key]) {
+    allData[key] = { progreso:{}, semanas:{}, visitas:[] };
+  }
+  const d = allData[key];
+  ASESORES.forEach(a => {
+    if(!d.progreso[a.nombre]) d.progreso[a.nombre] = {};
+    PRODUCTS.forEach(p => {
+      if(d.progreso[a.nombre][p] === undefined) d.progreso[a.nombre][p] = 0;
+    });
+    if(!d.semanas[a.nombre]) {
+      // Default 4 weeks
+      d.semanas[a.nombre] = Array.from({length:4}, () => ({real:0, meta:0, estado:''}));
+      if(a.nivel === 2) {
+        d.semanas[a.nombre].forEach(w => w.meta = 5);
+      } else {
+        distribuirMetas(d.semanas[a.nombre], META_TRASP[1]);
+      }
+    }
+    // Migrate old format: ensure estado field exists
+    d.semanas[a.nombre] = d.semanas[a.nombre].map(w =>
+      typeof w === 'number' ? {real:w, meta:5, estado:''} : {...w, estado: w.estado||''}
+    );
+  });
+  return d;
+}
+
+function getCurrentData() { return getPeriodoData(getPeriodoKey()); }
+
+function save() {
+  localStorage.setItem('ars_allData', JSON.stringify(allData));
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='graficos') setTimeout(renderCharts, 50);
+  if(name==='detalles') renderAdvisors();
+}
+
+function renderAll() {
+  renderSummary();
+  renderTraspasoTable();
+  renderAdvisors();
+  renderVisitas();
+}
+
+// ─── SUMMARY ─────────────────────────────────────────────────────────────────
+function renderSummary() {
+  const d = getCurrentData();
+  const totalTraspMeta = ASESORES.reduce((s,a) => s + META_TRASP[a.nivel], 0);
+  const totalTrasp = ASESORES.reduce((s,a) => {
+    return s + d.semanas[a.nombre].reduce((ss,w) => ss+(w.real||0), 0);
+  }, 0);
+
+  const cards = [
+    { label:'Traspasos Equipo', value: totalTrasp, sub: `Meta: ${totalTraspMeta}`, hl: true },
+    { label:'Asesores Nv. 2', value: 3, sub: 'Meta mensual: 20', hl: false },
+    { label:'Asesores Nv. 1', value: 5, sub: 'Meta mensual: 36', hl: false },
+  ];
+
+  document.getElementById('summaryCards').innerHTML = cards.map(c => `
+    <div class="sum-card ${c.hl?'highlight':''}">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ─── TRASPASO TABLE ───────────────────────────────────────────────────────────
+function renderTraspasoTable() {
+  const d = getCurrentData();
+  const maxWeeks = Math.max(...ASESORES.map(a => d.semanas[a.nombre].length));
+
+  const weekHeaders = Array.from({length: maxWeeks}, (_,i) =>
+    `<th>Sem ${i+1}<br><span style="font-size:0.62rem;color:var(--accent2);font-weight:400;">Meta · Real</span></th>`
+  ).join('');
+
+  const rows = ASESORES.map(a => {
+    const sems = d.semanas[a.nombre];
+    const metaMensual = META_TRASP[a.nivel];
+    const totalReal = sems.reduce((s,w) => s+(w.real||0), 0);
+
+    const weekCells = Array.from({length: maxWeeks}, (_,i) => {
+      const w = sems[i];
+      if(!w) return `<td style="color:var(--text-dim);">—</td>`;
+      const real = w.real || 0;
+      const meta = w.meta || 5;
+      const color = semColor(real, meta);
+      return `<td>
+        <div class="td-meta">${meta}</div>
+        <div class="td-real" style="color:${color};font-weight:700;">${real}</div>
+      </td>`;
+    }).join('');
+
+    const totalPct = metaMensual > 0 ? Math.round(totalReal/metaMensual*100) : 0;
+    const totalColor = totalPct >= 100 ? 'var(--accent3)' : totalPct >= 60 ? 'var(--accent2)' : 'var(--text)';
+    const lvlCls = a.nivel===2 ? 'level-nv2' : 'level-nv1';
+
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <span>${a.nombre}</span>
+          <span class="advisor-level ${lvlCls}">Nv.${a.nivel}</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--text-dim);font-family:'DM Sans',sans-serif;font-weight:400;">Meta: ${metaMensual}</div>
+      </td>
+      ${weekCells}
+      <td class="td-total" style="color:${totalColor};">
+        ${totalReal}
+        <div style="font-size:0.68rem;color:var(--text-dim);font-weight:400;">${totalPct}%</div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('traspasoTable').innerHTML = `
+    <div class="traspaso-table-wrap" id="traspasoTableInner" title="Doble clic para exportar imagen">
+      <table class="traspaso-table">
+        <thead><tr>
+          <th style="text-align:left;">Asesor</th>
+          ${weekHeaders}
+          <th>Total</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="font-size:0.7rem;color:var(--text-dim);margin-top:6px;text-align:right;">
+      💡 Doble clic en la tabla para exportar como imagen
+    </div>`;
+
+  document.getElementById('traspasoTableInner').addEventListener('dblclick', exportTableAsImage);
+}
+
+// Color rules for weekly real vs meta
+function semColor(real, meta) {
+  if(real <= 4) return '#f74f7a';           // 0-4: rojo
+  if(real >= meta) return '#4ff7a2';        // igual o supera meta: verde
+  return '#f7e54f';                          // tiene 5+ pero no llega a meta: amarillo
+}
+
+async function exportTableAsImage() {
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const mesIdx = parseInt(document.getElementById('selMes').value);
+  const anio = document.getElementById('selAnio').value;
+  const titulo = `Progreso Traspasos — ${meses[mesIdx]} ${anio}`;
+
+  const d = getCurrentData();
+  const maxWeeks = Math.max(...ASESORES.map(a => d.semanas[a.nombre].length));
+
+  // Build table data
+  const colW = 90;
+  const nameW = 140;
+  const rowH = 52;
+  const headerH = 44;
+  const padding = 20;
+  const totalCols = 1 + maxWeeks + 1; // name + weeks + total
+  const width = padding*2 + nameW + maxWeeks*colW + colW;
+  const height = padding*2 + 36 + headerH + ASESORES.length * rowH + 10;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width * 2;  // retina
+  canvas.height = height * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // Background
+  ctx.fillStyle = '#0d0f14';
+  ctx.fillRect(0, 0, width, height);
+
+  // Title
+  ctx.fillStyle = '#e8eaf0';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(titulo, padding, padding + 16);
+
+  // Draw header
+  let y = padding + 36;
+  ctx.fillStyle = '#1e2330';
+  ctx.fillRect(padding, y, width - padding*2, headerH);
+
+  ctx.fillStyle = '#7a8099';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('ASESOR', padding + 8, y + 16);
+  ctx.fillText('NV', padding + 8, y + 30);
+
+  for(let i = 0; i < maxWeeks; i++) {
+    const x = padding + nameW + i * colW + colW/2;
+    ctx.textAlign = 'center';
+    ctx.fillText(`SEM ${i+1}`, x, y + 14);
+    ctx.fillStyle = '#f7a24f';
+    ctx.fillText('META · REAL', x, y + 28);
+    ctx.fillStyle = '#7a8099';
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('TOTAL', padding + nameW + maxWeeks*colW + colW/2, y + 20);
+  ctx.textAlign = 'left';
+
+  // Draw rows
+  ASESORES.forEach((a, rowIdx) => {
+    const sems = d.semanas[a.nombre];
+    const metaMensual = META_TRASP[a.nivel];
+    const totalReal = sems.reduce((s,w) => s+(w.real||0), 0);
+    const rowY = y + headerH + rowIdx * rowH;
+
+    // Row background
+    ctx.fillStyle = rowIdx % 2 === 0 ? '#161a22' : '#13171f';
+    ctx.fillRect(padding, rowY, width - padding*2, rowH);
+
+    // Border
+    ctx.strokeStyle = '#2a3040';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(padding, rowY + rowH);
+    ctx.lineTo(width - padding, rowY + rowH);
+    ctx.stroke();
+
+    // Name
+    ctx.fillStyle = '#e8eaf0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(a.nombre, padding + 8, rowY + 20);
+
+    // Level badge
+    ctx.fillStyle = a.nivel === 2 ? '#c084fc' : '#4f8ef7';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(`NV.${a.nivel}`, padding + 8, rowY + 34);
+
+    // Week cells
+    for(let i = 0; i < maxWeeks; i++) {
+      const w = sems[i];
+      const cx = padding + nameW + i * colW + colW/2;
+      ctx.textAlign = 'center';
+
+      if(!w) {
+        ctx.fillStyle = '#7a8099';
+        ctx.font = '11px sans-serif';
+        ctx.fillText('—', cx, rowY + rowH/2 + 4);
+      } else {
+        const real = w.real || 0;
+        const meta = w.meta || 0;
+        const estado = w.estado || '';
+        const inactiva = estado === 'V' || estado === 'L';
+
+        // Meta (orange)
+        ctx.fillStyle = inactiva ? '#c084fc' : '#f7a24f';
+        ctx.font = '10px sans-serif';
+        ctx.fillText(inactiva ? estado : meta, cx, rowY + 16);
+
+        // Real (colored)
+        if(!inactiva) {
+          const color = real <= 4 ? '#f74f7a' : real >= meta ? '#4ff7a2' : '#f7e54f';
+          ctx.fillStyle = color;
+          ctx.font = 'bold 14px sans-serif';
+          ctx.fillText(real, cx, rowY + 34);
+        }
+      }
+      ctx.textAlign = 'left';
+    }
+
+    // Total cell
+    const totalPct = metaMensual > 0 ? Math.round(totalReal/metaMensual*100) : 0;
+    const totalColor = totalPct >= 100 ? '#4ff7a2' : totalPct >= 60 ? '#f7a24f' : '#e8eaf0';
+    const tx = padding + nameW + maxWeeks*colW + colW/2;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = totalColor;
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText(totalReal, tx, rowY + 20);
+    ctx.fillStyle = '#7a8099';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(`${totalPct}%`, tx, rowY + 36);
+    ctx.textAlign = 'left';
+  });
+
+  // Convert to image and trigger download / share
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    // Try native share (mobile) first
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob],'progreso.png',{type:'image/png'})]})) {
+      navigator.share({
+        title: titulo,
+        files: [new File([blob], 'progreso-traspasos.png', {type:'image/png'})]
+      }).catch(()=>{});
+    } else {
+      // Fallback: download link
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'progreso-traspasos.png';
+      a.click();
+    }
+    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+  }, 'image/png');
+}
+
+// ─── ASESOR DETAIL CARDS ─────────────────────────────────────────────────────
+function renderAdvisors() {
+  const d = getCurrentData();
+  const sel = document.getElementById('regAsesor');
+  const current = sel.value; // preserve current selection
+  sel.innerHTML = '<option value="">— Seleccionar asesor —</option>' +
+    ASESORES.map(a => `<option value="${a.nombre}" ${current===a.nombre?'selected':''}>${a.nombre}</option>`).join('');
+
+  document.getElementById('advisorsGrid').innerHTML = ASESORES.map(a => {
+    const prog = d.progreso[a.nombre];
+    const metaTrasp = META_TRASP[a.nivel];
+
+    // Product rows (non-traspaso)
+    const prodRows = ['carnets','dependientes','unificaciones','formularios','planes'].map((p,i) => {
+      const meta = a.metas[p];
+      if(meta === 0) return '';
+      const val = prog[p] || 0;
+      const pct = Math.min(100, meta>0 ? Math.round(val/meta*100) : 0);
+      return `
+        <div class="product-row">
+          <div class="product-meta">
+            <span class="product-name">${PRODUCT_LABELS[p]}</span>
+            <span class="product-count" style="color:${pct>=100?'#4ff7a2':pct>=60?'#f7a24f':'#e8eaf0'}">${val} / ${meta}</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${COLORS[i+1]}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Traspaso progress bar (sum of semanas)
+    const semanas = d.semanas[a.nombre];
+    const totalTrasp = semanas.reduce((s,w) => s+(w.real||0), 0);
+    const traspPct = Math.min(100, Math.round(totalTrasp/metaTrasp*100));
+    const traspRow = `
+      <div class="product-row">
+        <div class="product-meta">
+          <span class="product-name">${PRODUCT_LABELS['traspasos']}</span>
+          <span class="product-count" style="color:${traspPct>=100?'#4ff7a2':traspPct>=60?'#f7a24f':'#e8eaf0'}">${totalTrasp} / ${metaTrasp}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill fill-blue" style="width:${traspPct}%"></div>
+        </div>
+      </div>`;
+
+    // Week boxes
+    const weekBoxes = semanas.map((w,i) => {
+      const real = w.real || 0;
+      const meta = w.meta || 0;
+      const estado = w.estado || '';
+      const inactiva = estado === 'V' || estado === 'L';
+      const color = inactiva ? 'var(--text-dim)' : semColor(real, meta);
+      const ganaBono = real >= 5;
+      const cumpleMeta = !inactiva && real >= meta && meta > 0;
+
+      const bonoText = inactiva ? '—' : real === 0 ? '—' : ganaBono ? '⚡ Bono' : '✗ Sin bono';
+      const bonoCls = inactiva || real === 0 ? 'pending' : ganaBono ? 'ok' : 'no';
+      const metaText = inactiva ? '' : real === 0 ? '' : cumpleMeta ? '✓ Meta' : '✗ Obj';
+      const metaCls = cumpleMeta ? 'ok' : 'no';
+
+      // Display value: V, L, or the number
+      const metaDisplay = inactiva ? estado : (meta || '');
+      const boxBg = inactiva ? 'rgba(120,130,150,0.08)' : '';
+      const estadoLabel = estado === 'V' ? 'Vacaciones' : estado === 'L' ? 'Licencia' : '';
+
+      return `
+        <div class="week-box" style="background:${boxBg};${inactiva?'opacity:0.6;':''}">
+          <div class="week-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span>Sem ${i+1}</span>
+            ${semanas.length > 1 ? `<span onclick="removeSemana('${a.nombre}',${i})" style="cursor:pointer;color:var(--accent4);font-size:0.65rem;line-height:1;">✕</span>` : ''}
+          </div>
+          <div style="font-size:0.58rem;color:var(--text-dim);text-align:center;margin-bottom:1px;text-transform:uppercase;letter-spacing:0.05em;">Meta</div>
+          <input type="text" value="${metaDisplay}"
+            onchange="updateSemanaMeta('${a.nombre}',${i},this.value)"
+            placeholder="—"
+            style="width:100%;background:transparent;border:none;text-align:center;
+            color:${inactiva?'var(--nv2)':'var(--accent2)'};font-family:'Syne',sans-serif;
+            font-size:0.82rem;font-weight:700;outline:none;cursor:text;margin-bottom:3px;
+            ${inactiva?'letter-spacing:0.05em;':''}">
+          ${inactiva
+            ? `<div style="font-size:0.58rem;color:var(--nv2);text-align:center;font-style:italic;">${estadoLabel}</div>`
+            : `<div style="font-size:0.58rem;color:var(--text-dim);text-align:center;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.05em;">Real</div>
+               <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;text-align:center;color:${color};margin-bottom:3px;">${real}</div>
+               <span class="week-status ${bonoCls}" style="display:block;text-align:center;">${bonoText}</span>
+               ${real > 0 ? `<span class="week-status ${metaCls}" style="display:block;text-align:center;font-size:0.55rem;">${metaText}</span>` : ''}`
+          }
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="advisor-card">
+        <div class="advisor-header">
+          <span class="advisor-name">${a.nombre}</span>
+          <span class="advisor-level ${a.nivel===2?'level-nv2':'level-nv1'}">Nv. ${a.nivel}</span>
+        </div>
+        <div class="advisor-body">
+          ${traspRow}
+          ${prodRows}
+          <div class="bonus-section">
+            <div style="margin-bottom:10px;">
+              <div class="bonus-title" style="margin-bottom:0;">⚡ Bono Semanal — Traspasos</div>
+              <div style="font-size:0.68rem;color:var(--text-dim);margin-top:2px;">Puedes editar la meta de cada semana directamente</div>
+            </div>
+            <div class="weeks-grid">${weekBoxes}</div>
+            <button onclick="addSemana('${a.nombre}')"
+              style="margin-top:8px;width:100%;background:transparent;border:1px dashed var(--border);
+              color:var(--text-dim);padding:5px;border-radius:8px;cursor:pointer;font-size:0.75rem;
+              font-family:'DM Sans',sans-serif;transition:all 0.2s;"
+              onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">
+              + Agregar semana
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── SEMANA ACTIONS ───────────────────────────────────────────────────────────
+function updateSemanaMeta(nombre, idx, val) {
+  const d = getCurrentData();
+  const a = ASESORES.find(x=>x.nombre===nombre);
+  const strVal = val.trim().toUpperCase();
+
+  if(strVal === 'V' || strVal === 'L') {
+    // Mark as inactive and redistribute
+    d.semanas[nombre][idx].estado = strVal;
+    d.semanas[nombre][idx].meta = 0;
+    d.semanas[nombre][idx].real = 0;
+    if(a.nivel === 1) distribuirMetas(d.semanas[nombre], META_TRASP[1]);
+    else d.semanas[nombre].filter(w=>!esInactiva(w)).forEach(w => w.meta = 5);
+  } else if(strVal === '' || strVal === '0') {
+    // Clear inactive status, restore
+    d.semanas[nombre][idx].estado = '';
+    if(a.nivel === 1) distribuirMetas(d.semanas[nombre], META_TRASP[1]);
+    else d.semanas[nombre].filter(w=>!esInactiva(w)).forEach(w => w.meta = 5);
+  } else {
+    // Normal number edit
+    const num = parseInt(val) || 0;
+    d.semanas[nombre][idx].meta = num;
+    d.semanas[nombre][idx].estado = '';
+  }
+  save();
+  renderAdvisors();
+  renderTraspasoTable();
+}
+
+function addSemana(nombre) {
+  const d = getCurrentData();
+  const a = ASESORES.find(x=>x.nombre===nombre);
+  d.semanas[nombre].push({real:0, meta:0, estado:''});
+  if(a.nivel === 1) {
+    distribuirMetas(d.semanas[nombre], META_TRASP[1]);
+  } else {
+    d.semanas[nombre].filter(w=>!esInactiva(w)).forEach(w => w.meta = 5);
+  }
+  save();
+  renderAdvisors();
+  renderTraspasoTable();
+}
+
+function removeSemana(nombre, idx) {
+  const d = getCurrentData();
+  if(d.semanas[nombre].length <= 1) return;
+  askConfirm(`¿Eliminar la Semana ${idx+1} de ${nombre}?`, () => {
+    d.semanas[nombre].splice(idx, 1);
+    const a = ASESORES.find(x=>x.nombre===nombre);
+    if(a.nivel === 1) {
+      distribuirMetas(d.semanas[nombre], META_TRASP[1]);
+    } else {
+      d.semanas[nombre].forEach(w => w.meta = 5);
+    }
+    save();
+    renderAdvisors();
+    renderTraspasoTable();
+  });
+}
+
+// ─── REGISTRO ─────────────────────────────────────────────────────────────────
+let pendingRegistro = null;
+
+function registrarProducto() {
+  const asesor = document.getElementById('regAsesor').value;
+  const producto = document.getElementById('regProducto').value;
+  const cantidad = parseInt(document.getElementById('regCantidad').value) || 0;
+  if(!asesor || asesor === '' || cantidad <= 0) {
+    if(!asesor) alert('Por favor selecciona un asesor primero.');
+    return;
+  }
+
+  if(producto === 'traspasos') {
+    const d = getCurrentData();
+    const sems = d.semanas[asesor];
+    pendingRegistro = { asesor, cantidad };
+    document.getElementById('semanaModalTitle').textContent = `¿En qué semana para ${asesor}?`;
+    document.getElementById('semanaModalSub').textContent = `Registrar ${cantidad} traspaso${cantidad>1?'s':''} — selecciona la semana:`;
+    document.getElementById('semanaModalBtns').innerHTML = sems.map((w,i) => {
+      const real = w.real || 0;
+      const meta = w.meta || 5;
+      const color = semColor(real, meta);
+      const statusHtml = real === 0
+        ? `<span style="color:var(--text-dim);font-size:0.7rem;">Sin registros</span>`
+        : `<span style="color:${color};font-size:0.7rem;">${real}/${meta}</span>`;
+      return `<button class="semana-btn" onclick="confirmarSemana(${i})">
+        <span>Semana ${i+1}</span>
+        ${statusHtml}
+      </button>`;
+    }).join('');
+    document.getElementById('semanaOverlay').classList.add('open');
+  } else {
+    const d = getCurrentData();
+    d.progreso[asesor][producto] = (d.progreso[asesor][producto]||0) + cantidad;
+    document.getElementById('regCantidad').value = '';
+    save();
+    renderAdvisors();
+    renderSummary();
+  }
+}
+
+function confirmarSemana(semIdx) {
+  if(!pendingRegistro) return;
+  const { asesor, cantidad } = pendingRegistro;
+  const d = getCurrentData();
+  d.semanas[asesor][semIdx].real = (d.semanas[asesor][semIdx].real || 0) + cantidad;
+  // Traspaso total = sum of all weeks
+  d.progreso[asesor]['traspasos'] = d.semanas[asesor].reduce((s,w)=>s+(w.real||0),0);
+  document.getElementById('regCantidad').value = '';
+  pendingRegistro = null;
+  closeSemanaModal();
+  save();
+  renderAdvisors();
+  renderSummary();
+  renderTraspasoTable();
+}
+
+function closeSemanaModal() {
+  document.getElementById('semanaOverlay').classList.remove('open');
+  pendingRegistro = null;
+}
+
+// ─── CONFIRM MODAL ────────────────────────────────────────────────────────────
+let pendingAction = null;
+function askConfirm(msg, fn) {
+  pendingAction = fn;
+  document.getElementById('confirmMsg').textContent = msg || 'Esta acción no se puede deshacer.';
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function confirmAction() {
+  if(pendingAction) { pendingAction(); pendingAction = null; }
+  closeConfirm();
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  pendingAction = null;
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+let charts = {};
+function renderCharts() {
+  const d = getCurrentData();
+  const names = ASESORES.map(a=>a.nombre);
+  const traspMetas = ASESORES.map(a=>META_TRASP[a.nivel]);
+  const traspReal = ASESORES.map(a=>d.semanas[a.nombre].reduce((s,w)=>s+(w.real||0),0));
+
+  if(charts.t) charts.t.destroy();
+  charts.t = new Chart(document.getElementById('chartTraspasos'), {
+    type:'bar',
+    data:{ labels:names, datasets:[
+      { label:'Realizado', data:traspReal, backgroundColor:'rgba(79,142,247,0.7)', borderRadius:6 },
+      { label:'Meta', data:traspMetas, backgroundColor:'rgba(79,142,247,0.15)', borderRadius:6 }
+    ]},
+    options:{ responsive:true, plugins:{legend:{labels:{color:'#7a8099'}}},
+      scales:{ x:{ticks:{color:'#7a8099'},grid:{color:'#1e2330'}}, y:{ticks:{color:'#7a8099'},grid:{color:'#1e2330'}} }}
+  });
+
+  const prodKeys = PRODUCTS.filter(p => ASESORES.some(a => (a.metas[p]||0)>0 || p==='traspasos'));
+  const prodLabels = prodKeys.map(p=>PRODUCT_LABELS[p]);
+  const prodMeta = prodKeys.map(p => p==='traspasos'
+    ? ASESORES.reduce((s,a)=>s+META_TRASP[a.nivel],0)
+    : ASESORES.reduce((s,a)=>s+(a.metas[p]||0),0));
+  const prodReal = prodKeys.map(p => p==='traspasos'
+    ? ASESORES.reduce((s,a)=>s+d.semanas[a.nombre].reduce((ss,w)=>ss+(w.real||0),0),0)
+    : ASESORES.reduce((s,a)=>s+(d.progreso[a.nombre][p]||0),0));
+
+  if(charts.p) charts.p.destroy();
+  charts.p = new Chart(document.getElementById('chartProductos'), {
+    type:'bar',
+    data:{ labels:prodLabels, datasets:[
+      { label:'Realizado', data:prodReal, backgroundColor:'rgba(79,247,162,0.7)', borderRadius:6 },
+      { label:'Meta', data:prodMeta, backgroundColor:'rgba(79,247,162,0.15)', borderRadius:6 }
+    ]},
+    options:{ responsive:true, plugins:{legend:{labels:{color:'#7a8099'}}},
+      scales:{ x:{ticks:{color:'#7a8099'},grid:{color:'#1e2330'}}, y:{ticks:{color:'#7a8099'},grid:{color:'#1e2330'}} }}
+  });
+
+  const bonoData = ASESORES.map(a => d.semanas[a.nombre].filter(w=>w.real >= 5).length);
+  if(charts.b) charts.b.destroy();
+  charts.b = new Chart(document.getElementById('chartBono'), {
+    type:'bar',
+    data:{ labels:names, datasets:[{ label:'Semanas con Bono', data:bonoData,
+      backgroundColor:bonoData.map(v=>v>0?'rgba(247,162,79,0.7)':'rgba(247,79,122,0.3)'), borderRadius:6 }]},
+    options:{ responsive:true, plugins:{legend:{labels:{color:'#7a8099'}}},
+      scales:{ x:{ticks:{color:'#7a8099'},grid:{color:'#1e2330'}},
+        y:{ticks:{color:'#7a8099',stepSize:1},grid:{color:'#1e2330'},max:5} }}
+  });
+}
+
+// ─── VISITAS ─────────────────────────────────────────────────────────────────
+const NV2_ASESORES = ['Ismeiry','Jordalia','Yamilex'];
+
+function toggleForm() {
+  document.getElementById('visitaForm').classList.toggle('open');
+}
+
+function toggleAccordion(nombre) {
+  const el = document.getElementById('accordion-'+nombre);
+  if(el) el.classList.toggle('open');
+}
+
+function agregarVisita() {
+  const empresa = document.getElementById('vEmpresa').value.trim();
+  const asesor = document.getElementById('vAsesor').value;
+  const fecha = document.getElementById('vFecha').value;
+  const estado = document.getElementById('vEstado').value;
+  const notas = document.getElementById('vNotas').value.trim();
+  if(!empresa) return;
+  const d = getCurrentData();
+  d.visitas.unshift({ id: Date.now(), empresa, asesor, fecha, estado, notas });
+  save();
+  renderVisitas();
+  const acc = document.getElementById('accordion-'+asesor);
+  if(acc && !acc.classList.contains('open')) acc.classList.add('open');
+  toggleForm();
+  document.getElementById('vEmpresa').value='';
+  document.getElementById('vNotas').value='';
+}
+
+function eliminarVisita(id, empresa) {
+  askConfirm(`¿Eliminar la visita a "${empresa}"?`, () => {
+    const d = getCurrentData();
+    d.visitas = d.visitas.filter(v=>v.id!==id);
+    save();
+    renderVisitas();
+  });
+}
+
+function cambiarEstado(id, val) {
+  const d = getCurrentData();
+  const v = d.visitas.find(v=>v.id===id);
+  if(v) { v.estado=val; save(); renderVisitas(); }
+}
+
+function renderVisitas() {
+  const d = getCurrentData();
+  const total = d.visitas.length;
+  document.getElementById('visitasTotalCount').textContent =
+    total === 0 ? 'Sin visitas registradas' :
+    total === 1 ? '1 visita en total' : `${total} visitas en total`;
+
+  const openSet = new Set();
+  NV2_ASESORES.forEach(n => {
+    const el = document.getElementById('accordion-'+n);
+    if(el && el.classList.contains('open')) openSet.add(n);
+  });
+
+  const container = document.getElementById('visitasAsesorList');
+  container.innerHTML = NV2_ASESORES.map(nombre => {
+    const visitas = d.visitas.filter(v=>v.asesor===nombre);
+    const count = visitas.length;
+    const wasOpen = openSet.has(nombre);
+    const items = count === 0
+      ? `<p style="color:var(--text-dim);font-size:0.82rem;padding:8px 4px;">Sin visitas registradas.</p>`
+      : visitas.map(v => `
+          <div class="visita-card">
+            <div>
+              <div class="visita-empresa">${v.empresa}</div>
+              <div class="visita-meta">📅 ${v.fecha ? new Date(v.fecha+'T00:00').toLocaleDateString('es-DO',{day:'2-digit',month:'short',year:'numeric'}) : '—'}</div>
+              ${v.notas ? `<div class="visita-notas">📝 ${v.notas}</div>` : ''}
+              <div style="margin-top:8px;">
+                <select style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:0.75rem;"
+                  onchange="cambiarEstado(${v.id}, this.value)">
+                  <option value="pendiente" ${v.estado==='pendiente'?'selected':''}>Pendiente</option>
+                  <option value="realizada" ${v.estado==='realizada'?'selected':''}>Realizada</option>
+                  <option value="seguimiento" ${v.estado==='seguimiento'?'selected':''}>En Seguimiento</option>
+                  <option value="cancelada" ${v.estado==='cancelada'?'selected':''}>Cancelada</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+              <span class="visita-status status-${v.estado}">${{pendiente:'Pendiente',realizada:'Realizada',seguimiento:'Seguimiento',cancelada:'Cancelada'}[v.estado]}</span>
+              <button class="delete-btn" onclick="eliminarVisita(${v.id},'${v.empresa.replace(/'/g,"\\'")}')">✕</button>
+            </div>
+          </div>`).join('');
+    return `
+      <div class="asesor-accordion ${wasOpen?'open':''}" id="accordion-${nombre}">
+        <div class="asesor-accordion-header" onclick="toggleAccordion('${nombre}')">
+          <div class="asesor-accordion-name">
+            ${nombre}
+            <span class="asesor-visit-count">${count} visita${count!==1?'s':''}</span>
+          </div>
+          <span class="accordion-arrow">▼</span>
+        </div>
+        <div class="asesor-accordion-body">
+          <div class="visitas-list">${items}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+const now = new Date();
+const defaultMes = now.getFullYear() >= 2026 ? now.getMonth() : 2;
+document.getElementById('selMes').value = defaultMes;
+document.getElementById('selAnio').value = '2026';
+
+const mesesInit = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+document.getElementById('periodoDisplay').textContent = mesesInit[defaultMes] + ' 2026';
+
+// Load from Google Sheets first, then render
+loadFromSheets().then(() => renderAll());
+</script>
+
+</body>
+</html>
