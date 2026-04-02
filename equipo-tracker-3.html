@@ -674,7 +674,7 @@ function setSyncStatus(status) {
 async function loadFromSheets() {
   setSyncStatus('syncing');
   try {
-    const res = await fetch(`${API_URL}?limit=1`);
+    const res = await fetch(`${API_URL}`);
     const rows = await res.json();
     if(rows && rows.length > 0 && rows[0].data) {
       allData = JSON.parse(rows[0].data);
@@ -691,22 +691,24 @@ async function saveToSheets() {
   localStorage.setItem('ars_allData', JSON.stringify(allData));
   setSyncStatus('syncing');
   try {
-    const payload = { data: JSON.stringify(allData) };
-    // Try update first, if fails create new row
-    const checkRes = await fetch(`${API_URL}?limit=1`);
+    const jsonStr = JSON.stringify(allData);
+    // Check if row exists
+    const checkRes = await fetch(`${API_URL}`);
     const rows = await checkRes.json();
 
     if(rows && rows.length > 0) {
-      await fetch(`${API_URL}/1`, {
+      // Update existing row
+      await fetch(`${API_URL}/data/${encodeURIComponent(rows[0].data)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: payload })
+        body: JSON.stringify({ data: { data: jsonStr } })
       });
     } else {
+      // Create first row
       await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [payload] })
+        body: JSON.stringify({ data: [{ data: jsonStr }] })
       });
     }
     setSyncStatus('ok');
