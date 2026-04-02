@@ -657,8 +657,8 @@ function updatePeriodo() {
   renderAll();
 }
 
-// ─── STATE & GOOGLE SHEETS SYNC ───────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbzBn2D2cuaabL6K0Kg4ZBQmmvRzt7IalqVKI_9TI5nYFvau4VrftqnCSmEx-VM5fqWwLg/exec';
+// ─── STATE & SHEETDB SYNC ───────────────────────────────────────────────────
+const API_URL = 'https://sheetdb.io/api/v1/b8i4g05n7qe65';
 let allData = {};
 let saveTimer = null;
 
@@ -671,31 +671,13 @@ function setSyncStatus(status) {
   el.style.color = colors[status];
 }
 
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Date.now();
-    const script = document.createElement('script');
-    window[cbName] = (data) => {
-      delete window[cbName];
-      document.body.removeChild(script);
-      resolve(data);
-    };
-    script.onerror = () => {
-      delete window[cbName];
-      document.body.removeChild(script);
-      reject(new Error('JSONP error'));
-    };
-    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
-    document.body.appendChild(script);
-  });
-}
-
 async function loadFromSheets() {
   setSyncStatus('syncing');
   try {
-    const res = await jsonp(`${API_URL}?action=get`);
-    if(res.success && res.data && typeof res.data === 'object') {
-      allData = res.data;
+    const res = await fetch(`${API_URL}?limit=1`);
+    const rows = await res.json();
+    if(rows && rows.length > 0 && rows[0].data) {
+      allData = JSON.parse(rows[0].data);
       localStorage.setItem('ars_allData', JSON.stringify(allData));
     }
     setSyncStatus('ok');
@@ -709,8 +691,24 @@ async function saveToSheets() {
   localStorage.setItem('ars_allData', JSON.stringify(allData));
   setSyncStatus('syncing');
   try {
-    const encoded = encodeURIComponent(JSON.stringify(allData));
-    await jsonp(`${API_URL}?action=save&data=${encoded}`);
+    const payload = { data: JSON.stringify(allData) };
+    // Try update first, if fails create new row
+    const checkRes = await fetch(`${API_URL}?limit=1`);
+    const rows = await checkRes.json();
+
+    if(rows && rows.length > 0) {
+      await fetch(`${API_URL}/1`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: payload })
+      });
+    } else {
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: [payload] })
+      });
+    }
     setSyncStatus('ok');
   } catch(e) {
     setSyncStatus('error');
