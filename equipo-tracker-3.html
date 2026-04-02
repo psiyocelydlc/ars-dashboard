@@ -658,7 +658,7 @@ function updatePeriodo() {
 }
 
 // ─── STATE & GOOGLE SHEETS SYNC ───────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycby_MadlH8GH1xP2d1iTys8XaSQ6p-aGehAoOpS2ali8cpJQbZMuzZgctOMiwqjw1Cw11w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzBn2D2cuaabL6K0Kg4ZBQmmvRzt7IalqVKI_9TI5nYFvau4VrftqnCSmEx-VM5fqWwLg/exec';
 let allData = {};
 let saveTimer = null;
 
@@ -671,13 +671,31 @@ function setSyncStatus(status) {
   el.style.color = colors[status];
 }
 
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    window[cbName] = (data) => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve(data);
+    };
+    script.onerror = () => {
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error('JSONP error'));
+    };
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+    document.body.appendChild(script);
+  });
+}
+
 async function loadFromSheets() {
   setSyncStatus('syncing');
   try {
-    const res = await fetch(`${API_URL}?action=get`);
-    const json = await res.json();
-    if(json.success && json.data && typeof json.data === 'object') {
-      allData = json.data;
+    const res = await jsonp(`${API_URL}?action=get`);
+    if(res.success && res.data && typeof res.data === 'object') {
+      allData = res.data;
       localStorage.setItem('ars_allData', JSON.stringify(allData));
     }
     setSyncStatus('ok');
@@ -691,12 +709,8 @@ async function saveToSheets() {
   localStorage.setItem('ars_allData', JSON.stringify(allData));
   setSyncStatus('syncing');
   try {
-    await fetch(API_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save', data: allData })
-    });
+    const encoded = encodeURIComponent(JSON.stringify(allData));
+    await jsonp(`${API_URL}?action=save&data=${encoded}`);
     setSyncStatus('ok');
   } catch(e) {
     setSyncStatus('error');
